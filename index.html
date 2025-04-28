@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Soil Quality Prediction Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #4e8cff;
+            --secondary-color: #6c757d;
+            --success-color: #28a745;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+            --light-bg: #f8f9fa;
+            --dark-bg: #343a40;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f7fa;
+            color: #333;
+        }
+        
+        .dashboard-container {
+            max-width: 1200px;
+            margin: 30px auto;
+            padding: 20px;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, var(--primary-color), #3a7bd5);
+            color: white;
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .parameter-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .parameter-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .parameter-card label {
+            font-weight: 600;
+            color: var(--secondary-color);
+            margin-bottom: 8px;
+        }
+        
+        .parameter-card input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        
+        .parameter-card input:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(78, 140, 255, 0.25);
+        }
+        
+        .btn-predict {
+            background-color: var(--primary-color);
+            border: none;
+            padding: 12px 30px;
+            font-size: 18px;
+            font-weight: 600;
+            border-radius: 50px;
+            margin: 20px 0;
+            width: 100%;
+            transition: all 0.3s;
+        }
+        
+        .btn-predict:hover {
+            background-color: #3a7bd5;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .result-section {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            margin-top: 30px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+        }
+        
+        .quality-indicator {
+            height: 10px;
+            border-radius: 5px;
+            background: linear-gradient(to right, var(--danger-color), var(--warning-color), var(--success-color));
+            margin: 20px 0;
+            position: relative;
+        }
+        
+        .quality-marker {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border: 3px solid var(--primary-color);
+            border-radius: 50%;
+            top: -5px;
+            transform: translateX(-50%);
+            transition: left 1s ease-in-out;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-top: 30px;
+        }
+        
+        .parameter-highlight {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+        
+        .parameter-badge {
+            background: white;
+            border-radius: 20px;
+            padding: 8px 15px;
+            margin: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+        }
+        
+        .parameter-badge .color-indicator {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        @media (max-width: 768px) {
+            .header {
+                padding: 20px;
+            }
+            
+            .parameter-card {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <div class="header text-center">
+            <h1 class="display-4">Soil Quality Prediction</h1>
+            <p class="lead">Enter your soil parameters to get a comprehensive quality analysis</p>
+        </div>
+        
+        <div class="row">
+            <!-- Left Column - Input Parameters -->
+            <div class="col-md-6">
+                <div class="parameter-card">
+                    <label for="N">Nitrogen (N) ppm</label>
+                    <input type="number" step="0.01" id="N" name="N" class="form-control" required>
+                </div>
+                
+                <div class="parameter-card">
+                    <label for="P">Phosphorus (P) ppm</label>
+                    <input type="number" step="0.01" id="P" name="P" class="form-control" required>
+                </div>
+                
+                <div class="parameter-card">
+                    <label for="K">Potassium (K) ppm</label>
+                    <input type="number" step="0.01" id="K" name="K" class="form-control" required>
+                </div>
+                
+                <div class="parameter-card">
+                    <label for="pH">pH Level</label>
+                    <input type="number" step="0.01" id="pH" name="pH" min="0" max="14" class="form-control" required>
+                </div>
+                
+                <div class="parameter-card">
+                    <label for="EC">Electrical Conductivity (EC) dS/m</label>
+                    <input type="number" step="0.01" id="EC" name="EC" class="form-control" required>
+                </div>
+                
+                <div class="parameter-card">
+                    <label for="OC">Organic Carbon (OC) %</label>
+                    <input type="number" step="0.01" id="OC" name="OC" class="form-control" required>
+                </div>
+            </div>
+            
+            <!-- Right Column - Input Parameters -->
+            <div class="col-md-6">
+                <div class="parameter-card">
+                    <label for="S">Sulfur (S) ppm</label>
+                    <input type="number" step="0.01" id="S" name="S" class="form-control" required>
+                </div>
+                
+                <div class="parameter-card">
+                    <label for="Zn">Zinc (Zn) ppm</label>
+                    <input type="number" step="0.01" id="Zn" name="Zn" class="form-control" required>
+                </div>
+                
+                <div class="parameter-card">
+                    <label for="Fe">Iron (Fe) ppm</label>
+                    <input type="number" step="0.01" id="Fe" name="Fe" class="form-control" required>
+                </div>
+                
+                <div class="parameter-card">
+                    <label for="Cu">Copper (Cu) ppm</label>
+                    <input type="number" step="0.01" id="Cu" name="Cu" class="form-control" required>
+                </div>
+                
+                <div class="parameter-card">
+                    <label for="Mn">Manganese (Mn) ppm</label>
+                    <input type="number" step="0.01" id="Mn" name="Mn" class="form-control" required>
+                </div>
+                
+                <div class="parameter-card">
+                    <label for="B">Boron (B) ppm</label>
+                    <input type="number" step="0.01" id="B" name="B" class="form-control" required>
+                </div>
+            </div>
+        </div>
+        
+        <button id="predict-btn" class="btn btn-predict btn-primary">
+            <i class="fas fa-chart-line"></i> Analyze Soil Quality
+        </button>
+        
+        <!-- Results Section (Initially Hidden) -->
+        <div id="result-section" class="result-section" style="display: none;">
+            <h2 class="text-center mb-4">Soil Analysis Results</h2>
+            
+            <div class="quality-indicator">
+                <div id="quality-marker" class="quality-marker"></div>
+            </div>
+            
+            <div class="text-center mb-4">
+                <h3 id="quality-text">Soil Quality: <span id="quality-value" class="fw-bold">Good</span></h3>
+                <p id="quality-description" class="text-muted">Your soil has balanced nutrient levels</p>
+            </div>
+            
+            <div class="chart-container">
+                <canvas id="parameterChart"></canvas>
+            </div>
+            
+            <h4 class="mt-5">Key Parameters</h4>
+            <div class="parameter-highlight" id="parameter-highlights">
+                <!-- Will be populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+    <script>
+        document.getElementById('predict-btn').addEventListener('click', function() {
+            // Validate inputs
+            const inputs = document.querySelectorAll('input[type="number"]');
+            let allValid = true;
+            
+            inputs.forEach(input => {
+                if (!input.value || isNaN(input.value)) {
+                    input.style.borderColor = 'red';
+                    allValid = false;
+                } else {
+                    input.style.borderColor = '#ddd';
+                }
+            });
+            
+            if (!allValid) {
+                alert('Please fill in all fields with valid numbers');
+                return;
+            }
+            
+            // Show loading state
+            const btn = document.getElementById('predict-btn');
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Analyzing...';
+            btn.disabled = true;
+            
+            // Simulate API call (replace with actual fetch to your Flask backend)
+            setTimeout(() => {
+                // Get form values
+                const formData = {
+                    N: parseFloat(document.getElementById('N').value),
+                    P: parseFloat(document.getElementById('P').value),
+                    K: parseFloat(document.getElementById('K').value),
+                    pH: parseFloat(document.getElementById('pH').value),
+                    EC: parseFloat(document.getElementById('EC').value),
+                    OC: parseFloat(document.getElementById('OC').value),
+                    S: parseFloat(document.getElementById('S').value),
+                    Zn: parseFloat(document.getElementById('Zn').value),
+                    Fe: parseFloat(document.getElementById('Fe').value),
+                    Cu: parseFloat(document.getElementById('Cu').value),
+                    Mn: parseFloat(document.getElementById('Mn').value),
+                    B: parseFloat(document.getElementById('B').value)
+                };
+                
+                // In a real app, you would send this to your Flask backend:
+                // fetch('/predict', {
+                //     method: 'POST',
+                //     headers: { 'Content-Type': 'application/json' },
+                //     body: JSON.stringify(formData)
+                // })
+                // .then(response => response.json())
+                // .then(data => showResults(data))
+                // .catch(error => console.error('Error:', error));
+                
+                // For demo purposes, we'll simulate a response
+                const simulatedResponse = {
+                    prediction: Math.floor(Math.random() * 3), // 0, 1, or 2
+                    parameters: formData
+                };
+                
+                showResults(simulatedResponse);
+                
+                // Reset button
+                btn.innerHTML = '<i class="fas fa-chart-line"></i> Analyze Soil Quality';
+                btn.disabled = false;
+            }, 1500);
+        });
+        
+        function showResults(data) {
+            // Show result section
+            document.getElementById('result-section').style.display = 'block';
+            
+            // Set quality indicator position (0-100%)
+            const qualityMarker = document.getElementById('quality-marker');
+            const qualityValue = document.getElementById('quality-value');
+            const qualityDescription = document.getElementById('quality-description');
+            
+            let position, qualityText, description;
+            
+            if (data.prediction === 0) {
+                position = '10%';
+                qualityText = 'Poor';
+                qualityValue.className = 'fw-bold text-danger';
+                description = 'Your soil needs significant improvement. Consider fertilization and pH adjustment.';
+            } else if (data.prediction === 1) {
+                position = '50%';
+                qualityText = 'Moderate';
+                qualityValue.className = 'fw-bold text-warning';
+                description = 'Your soil has some deficiencies that should be addressed for optimal plant growth.';
+            } else {
+                position = '90%';
+                qualityText = 'Excellent';
+                qualityValue.className = 'fw-bold text-success';
+                description = 'Your soil has balanced nutrient levels and good structure. Maintain current practices.';
+            }
+            
+            qualityMarker.style.left = position;
+            qualityValue.textContent = qualityText;
+            qualityDescription.textContent = description;
+            
+            // Create parameter highlights
+            const highlightsContainer = document.getElementById('parameter-highlights');
+            highlightsContainer.innerHTML = '';
+            
+            const colors = [
+                '#4e8cff', '#6c757d', '#28a745', '#ffc107', 
+                '#dc3545', '#17a2b8', '#6610f2', '#fd7e14',
+                '#20c997', '#e83e8c', '#6f42c1', '#343a40'
+            ];
+            
+            let colorIndex = 0;
+            for (const [key, value] of Object.entries(data.parameters)) {
+                const badge = document.createElement('div');
+                badge.className = 'parameter-badge';
+                
+                const colorIndicator = document.createElement('div');
+                colorIndicator.className = 'color-indicator';
+                colorIndicator.style.backgroundColor = colors[colorIndex % colors.length];
+                
+                const text = document.createElement('span');
+                text.textContent = `${key}: ${value}`;
+                
+                badge.appendChild(colorIndicator);
+                badge.appendChild(text);
+                highlightsContainer.appendChild(badge);
+                
+                colorIndex++;
+            }
+            
+            // Create chart
+            createParameterChart(data.parameters);
+        }
+        
+        function createParameterChart(parameters) {
+            const ctx = document.getElementById('parameterChart').getContext('2d');
+            
+            // Destroy previous chart if it exists
+            if (window.parameterChart) {
+                window.parameterChart.destroy();
+            }
+            
+            // Prepare data
+            const labels = Object.keys(parameters);
+            const values = Object.values(parameters);
+            const backgroundColors = [
+                'rgba(78, 140, 255, 0.7)',
+                'rgba(108, 117, 125, 0.7)',
+                'rgba(40, 167, 69, 0.7)',
+                'rgba(255, 193, 7, 0.7)',
+                'rgba(220, 53, 69, 0.7)',
+                'rgba(23, 162, 184, 0.7)',
+                'rgba(102, 16, 242, 0.7)',
+                'rgba(253, 126, 20, 0.7)',
+                'rgba(32, 201, 151, 0.7)',
+                'rgba(232, 62, 140, 0.7)',
+                'rgba(111, 66, 193, 0.7)',
+                'rgba(52, 58, 64, 0.7)'
+            ];
+            
+            window.parameterChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Parameter Values',
+                        data: values,
+                        backgroundColor: backgroundColors,
+                        borderColor: backgroundColors.map(color => color.replace('0.7', '1')),
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Value'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Soil Parameters'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.dataset.label}: ${context.raw}`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
